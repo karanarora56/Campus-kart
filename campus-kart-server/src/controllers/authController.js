@@ -58,10 +58,12 @@ export const register = async (req, res) => {
     });
 
     // Alert the student and the admin
-    await Promise.all([
-      sendOTPEmail(email, otpCode),
-      sendAdminAlert({ fullName, email, branch, batch }) 
-    ]);
+   try {
+  await sendOTPEmail(email, otpCode);
+  await sendAdminAlert({ fullName, email, branch, batch });
+} catch (mailError) {
+  console.error("Email sending error:", mailError);
+}
 
     res.status(201).json({ 
       success: true, 

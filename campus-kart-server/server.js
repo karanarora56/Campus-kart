@@ -1,5 +1,7 @@
-import express from 'express';
 import dotenv from 'dotenv';
+dotenv.config();
+import express from 'express';
+
 import cors from 'cors';
 import mongoose from 'mongoose';
 import { createServer } from 'http';
@@ -17,7 +19,7 @@ import chatRoutes from './src/routes/chatRoutes.js';
 // --- SOCKET HANDLER IMPORT ---
 import setupSocketHandlers from './socket/socketHandlers.js';
 
-dotenv.config();
+
 
 const app = express();
 const httpServer = createServer(app);
