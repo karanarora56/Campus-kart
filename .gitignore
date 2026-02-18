@@ -16,7 +16,7 @@ node_modules/
 *.ntvs*
 *.njsproj
 *.sln
-*.sw?
+
 
 # OS metadata
 .DS_Store
