@@ -7,16 +7,22 @@ import { Server } from 'socket.io';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import mongoSanitize from 'express-mongo-sanitize';
+
+// Route Imports
 import adminRoutes from './routes/adminRoutes.js';
 import productRoutes from './routes/productRoutes.js';
 import authRoutes from './routes/authRoutes.js';
+
+// Socket Handler Import
+import setupSocketHandlers from './socket/socketHandlers.js';
+
 dotenv.config();
 
 const app = express();
 const httpServer = createServer(app);
 const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
 
-// In your Socket.io config
+// --- SOCKET.IO CONFIG ---
 const io = new Server(httpServer, {
   cors: {
     origin: frontendUrl,
@@ -24,6 +30,10 @@ const io = new Server(httpServer, {
     methods: ["GET", "POST"]
   }
 });
+
+// Pass the 'io' instance to your modular handlers
+setupSocketHandlers(io);
+
 // --- MIDDLEWARE ---
 app.use(helmet()); 
 app.use(cors({ 
@@ -43,19 +53,12 @@ app.get('/', (req, res) => {
   res.send('Campus Kart API is running in Midnight Mode...');
 });
 
-// --- SOCKET.IO ---
-io.on('connection', (socket) => {
-  console.log('A student connected:', socket.id);
-  socket.on('disconnect', () => console.log('Student disconnected'));
-});
-
 // --- DATABASE & START ---
 const connectDB = async () => {
   try {
     const conn = await mongoose.connect(process.env.MONGO_URI);
     console.log(`🚀 NITJ Database Connected: ${conn.connection.host}`);
     
-    // Start server ONLY after DB connects
     const PORT = process.env.PORT || 5000;
     httpServer.listen(PORT, () => {
       console.log(`🌙 Server glowing in Midnight Violet on port ${PORT}`);
