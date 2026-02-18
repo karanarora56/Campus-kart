@@ -8,13 +8,13 @@ import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import mongoSanitize from 'express-mongo-sanitize';
 
-// Route Imports
-import adminRoutes from './routes/adminRoutes.js';
-import productRoutes from './routes/productRoutes.js';
-import authRoutes from './routes/authRoutes.js';
-import chatRoutes from './routes/chatRoutes.js';
+// --- ROUTE IMPORTS ---
+import adminRoutes from './src/routes/adminRoutes.js';
+import productRoutes from './src/routes/productRoutes.js';
+import authRoutes from './src/routes/authRoutes.js';
+import chatRoutes from './src/routes/chatRoutes.js';
 
-// Socket Handler Import
+// --- SOCKET HANDLER IMPORT ---
 import setupSocketHandlers from './socket/socketHandlers.js';
 
 dotenv.config();
@@ -23,7 +23,6 @@ const app = express();
 const httpServer = createServer(app);
 const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
 
-// --- SOCKET.IO CONFIG ---
 const io = new Server(httpServer, {
   cors: {
     origin: frontendUrl,
@@ -32,15 +31,11 @@ const io = new Server(httpServer, {
   }
 });
 
-// Pass the 'io' instance to your modular handlers
 setupSocketHandlers(io);
 
 // --- MIDDLEWARE ---
 app.use(helmet()); 
-app.use(cors({ 
-  origin: frontendUrl, 
-  credentials: true 
-}));
+app.use(cors({ origin: frontendUrl, credentials: true }));
 app.use(express.json());
 app.use(mongoSanitize());
 app.use(cookieParser());
@@ -55,8 +50,8 @@ app.get('/', (req, res) => {
   res.send('Campus Kart API is running in Midnight Mode...');
 });
 
-// --- DATABASE & START ---
-const connectDB = async () => {
+// --- DATABASE & START (CLEANED) ---
+const startServer = async () => {
   try {
     const conn = await mongoose.connect(process.env.MONGO_URI);
     console.log(`🚀 NITJ Database Connected: ${conn.connection.host}`);
@@ -65,12 +60,14 @@ const connectDB = async () => {
     httpServer.listen(PORT, () => {
       console.log(`🌙 Server glowing in Midnight Violet on port ${PORT}`);
     });
+    console.log("📧 Mailer User:", process.env.EMAIL_USER);
+    console.log("🔑 Mailer Pass Loaded:", process.env.EMAIL_PASS ? "YES" : "NO");
   } catch (error) {
-    console.error(`❌ Error: ${error.message}`);
+    console.error(`❌ Connection Error: ${error.message}`);
     process.exit(1);
   }
 };
 
-connectDB();
+startServer();
 
 export { io };
