@@ -12,6 +12,7 @@ import mongoSanitize from 'express-mongo-sanitize';
 import adminRoutes from './routes/adminRoutes.js';
 import productRoutes from './routes/productRoutes.js';
 import authRoutes from './routes/authRoutes.js';
+import chatRoutes from './routes/chatRoutes.js';
 
 // Socket Handler Import
 import setupSocketHandlers from './socket/socketHandlers.js';
@@ -48,6 +49,7 @@ app.use(cookieParser());
 app.use('/api/admin', adminRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/chat', chatRoutes);
 
 app.get('/', (req, res) => {
   res.send('Campus Kart API is running in Midnight Mode...');

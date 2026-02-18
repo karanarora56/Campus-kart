@@ -15,8 +15,6 @@ const chatSchema = new mongoose.Schema({
     text: { type: String, required: true },
     timestamp: { type: Date, default: Date.now }
   }],
-
-  // Syncing with Product locations
   meetupLocation: { 
     type: String, 
     enum: [
@@ -26,13 +24,7 @@ const chatSchema = new mongoose.Schema({
     ],
     default: 'Snackers' 
   },
-  
-  // String type to handle leading zeros safely
-  meetupOTP: { 
-    type: String, 
-    select: false 
-  },
-
+  meetupOTP: { type: String, select: false },
   status: { 
     type: String, 
     enum: ['Chatting', 'Meetup Arranged', 'Completed', 'Cancelled'], 
@@ -40,7 +32,7 @@ const chatSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-// Prevent duplicate chats for the same product between the same two students
+// Crucial: This index works with the sorting logic in our controller
 chatSchema.index({ product: 1, participants: 1 }, { unique: true });
 
 const Chat = mongoose.model('Chat', chatSchema);
