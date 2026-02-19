@@ -18,12 +18,12 @@ export const sendOTPEmail = async (email, otp) => {
   const transporter = getTransporter(); // Initialize right before sending
   
   const mailOptions = {
-    from: `"Campus Kart Bot" <${process.env.EMAIL_USER}>`,
+    from: `"Campus Kart Verification" <${process.env.EMAIL_USER}>`,
     to: email,
     subject: `🔐 ${otp} is your verification code`,
     html: `<div style="background:#0B0E14; color:white; padding:20px; text-align:center; font-family:sans-serif;">
             <h1 style="color:#7C3AED;">Campus Kart</h1>
-            <p>Your NITJ Verification Code is:</p>
+            <p>Your Verification Code is:</p>
             <h2 style="letter-spacing:5px; color:#7C3AED;">${otp}</h2>
            </div>`
   };

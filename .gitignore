@@ -7,7 +7,7 @@ yarn-error.log*
 node_modules/
 
 # Environment variables (THE MOST IMPORTANT PART)
-#.env
+.env
 
 # Debugging
 .vscode/
