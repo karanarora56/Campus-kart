@@ -26,8 +26,8 @@ const userSchema = new mongoose.Schema({
   branch: { 
     type: String, 
     required: true, 
-    enum: ['CS', 'IT', 'ECE', 'EE', 'ME', 'CE', 'ICE', 'BT', 'CH', 'TT'],
-    default: 'CS' 
+    enum: ['CSE', 'IT', 'ECE', 'EE', 'ME', 'CE', 'ICE', 'BT', 'CH', 'TT'],
+    default: 'CSE' 
   },
   batch: { type: Number, required: true, min: 2020, max: 2040 },
 
@@ -37,7 +37,7 @@ const userSchema = new mongoose.Schema({
   
   // Stores the full history of Admin actions for this user
   moderationHistory: [{
-    action: { type: String, enum: ['BAN', 'UNBAN'] },
+    action: { type: String, enum: ['BAN', 'UNBAN','PROMOTION'] },
     reason: { type: String, required: true },
     timestamp: { type: Date, default: Date.now },
     performedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' } // Reference to Admin

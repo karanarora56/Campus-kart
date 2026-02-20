@@ -2,10 +2,10 @@ import Chat from '../models/Chat.js';
 
 export const accessChat = async (req, res) => {
   const { productId, sellerId } = req.body;
-  const buyerId = req.user.id;
+  const buyerId = req.user._id; // Use ._id to be safe
 
-  // FIX 1: Prevent self-chatting
-  if (buyerId === sellerId) {
+  // Also, when comparing MongoDB ObjectIDs, use .toString()
+  if (buyerId.toString() === sellerId.toString()) {
     return res.status(400).json({ message: "You cannot start a chat with yourself." });
   }
 
@@ -39,7 +39,8 @@ export const accessChat = async (req, res) => {
 // 2. Get all chats for the logged-in user (Inbox)
 export const getMyChats = async (req, res) => {
   try {
-    const chats = await Chat.find({ participants: req.user.id })
+    // Using req.user._id ensures we match the database participant IDs exactly
+    const chats = await Chat.find({ participants: req.user._id }) 
       .populate('participants', 'fullName email')
       .populate('product', 'title price images')
       .sort({ updatedAt: -1 });

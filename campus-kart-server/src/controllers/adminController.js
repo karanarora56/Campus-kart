@@ -93,3 +93,83 @@ export const getUserModerationHistory = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+/**
+ * @desc    View all reported items for moderation
+ * @route   GET /api/admin/reports
+ */
+/**
+ * @desc    View all reported items for moderation
+ * @route   GET /api/admin/reports
+ */
+export const getReportedProducts = async (req, res) => {
+  try {
+    // 1. Fetch products where the reports array is not empty
+    const reportedItems = await Product.find({ "reports.0": { $exists: true } })
+      .populate('seller', 'fullName email branch')
+      .populate('reports.reporter', 'fullName email'); // CHANGED FROM reportedBy TO reporter
+
+    res.status(200).json({ 
+      success: true, 
+      count: reportedItems.length, 
+      data: reportedItems 
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+/**
+ * @desc    Admin removal of a specific product
+ * @route   DELETE /api/admin/product/:id
+ */
+export const removeProductByAdmin = async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product) return res.status(404).json({ success: false, message: "Product not found" });
+
+    // Permanent removal or soft hide? Soft hide is safer for audit trails.
+    product.isAdminRemoved = true;
+    product.isHidden = true;
+    await product.save();
+
+    res.status(200).json({ success: true, message: "Item removed by Admin for violation." });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+/**
+ * @desc    Promote a student to Admin role
+ * @route   PATCH /api/admin/promote/:id
+ * @access  Private/Admin
+ */
+export const promoteToAdmin = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "Student not found" });
+    }
+
+    if (user.role === 'admin') {
+      return res.status(400).json({ success: false, message: "User is already an Admin" });
+    }
+
+    // Update role
+    user.role = 'admin';
+    
+    // Log this promotion in their history for the audit trail
+    user.moderationHistory.push({
+      action: 'PROMOTION',
+      reason: "Promoted to Admin status by " + req.user.fullName,
+      performedBy: req.user._id
+    });
+
+    await user.save();
+
+    res.status(200).json({ 
+      success: true, 
+      message: `${user.fullName} has been promoted to Admin.` 
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
