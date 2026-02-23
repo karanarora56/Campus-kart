@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+@theme {
+  /* Midnight Palette */
+  --color-midnight-base: #0B0E14;
+  --color-midnight-accent: #7C3AED;
+  --color-paper-base: #F9FAFB; /* Professional Snow */
+}
+
+/* Light Mode (Default) */
+:root {
+  --bg-main: var(--color-paper-base);
+  --text-main: #1A1A1A;
+}
+
+/* Dark Mode Overrides */
+.dark {
+  --bg-main: var(--color-midnight-base);
+  --text-main: #F9FAFB;
+}
+
+body {
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  transition: background-color 0.3s ease, color 0.3s ease;
+  margin: 0;
+  min-height: 100vh;
+}
