@@ -1,6 +1,7 @@
 import Product from '../models/Product.js';
 import User from '../models/User.js';
 import cloudinary from '../utils/cloudinary.js';
+
 const uploadToCloudinary = (buffer) => {
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
@@ -76,6 +77,7 @@ export const getFoundFeed = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
 /**
  * @desc    Fetch all available marketplace listings (Excludes Lost/Found)
  * @route   GET /api/products
@@ -112,7 +114,22 @@ export const getProducts = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
-// Additional endpoints for product details, marking as sold, and reporting are implemented below.
+
+/**
+ * @desc    Get logged-in user's products for their Dashboard
+ * @route   GET /api/products/me
+ * @access  Private
+ */
+export const getMyProducts = async (req, res) => {
+  try {
+    // Fetch all products where the seller ID matches the currently logged-in user
+    const products = await Product.find({ seller: req.user._id }).sort('-createdAt');
+    res.status(200).json({ success: true, count: products.length, products });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 /**
  * @desc    Get detailed view of a single product
  * @route   GET /api/products/:id
@@ -132,6 +149,7 @@ export const getProductById = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
 /**
  * @desc    Mark item as sold and calculate Sustainability Score for seller
  * @route   PATCH /api/products/:id/sold
@@ -193,6 +211,7 @@ export const markProductAsSold = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
 /**
  * @desc    Report a product for moderation
  * @route   POST /api/products/:id/report
@@ -233,6 +252,31 @@ export const reportProduct = async (req, res) => {
       success: true, 
       message: "Report submitted. Our campus admins will review this shortly." 
     });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+/**
+ * @desc    Delete a product listing
+ * @route   DELETE /api/products/:id
+ * @access  Private (Owner only)
+ */
+export const deleteProduct = async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    
+    if (!product) {
+      return res.status(404).json({ success: false, message: "Product not found" });
+    }
+
+    // Security check: Only the owner can delete it
+    if (product.seller.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, message: "You can only delete your own items!" });
+    }
+
+    await product.deleteOne();
+    
+    res.status(200).json({ success: true, message: "Item permanently deleted." });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

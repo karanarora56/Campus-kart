@@ -4,16 +4,20 @@ import { ArrowLeft, MapPin, Tag, ShieldCheck, Leaf, MessageSquare, Loader2 } fro
 import axiosInstance from '../utils/axiosInstance';
 import { useStore } from '../store/useStore';
 import { AuthModal } from '../components/AuthModal';
+import { ContactModal } from '../components/ContactModal';
 
 export const ProductDetail = () => {
-  const { id } = useParams(); // Gets the product ID from the URL
+  const { id } = useParams();
   const navigate = useNavigate();
+  
   const isAuthenticated = useStore((state) => state.isAuthenticated);
+  const currentUser = useStore((state) => state.user); // 1. GET CURRENT USER
   
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeImage, setActiveImage] = useState(0);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -37,14 +41,18 @@ export const ProductDetail = () => {
     return <div className="p-10 text-center text-xl text-slate-500">Product not found.</div>;
   }
 
+  // 2. CHECK IF THE LOGGED IN USER OWNS THIS ITEM
+  const isOwner = currentUser && product && (
+    String(currentUser._id || currentUser.id) === String(product.seller?._id || product.seller)
+  );
+
   const handleContact = () => {
     if (!isAuthenticated) setIsAuthModalOpen(true);
-    else console.log("Open Messaging Modal for:", product.title);
+    else setIsContactModalOpen(true);
   };
 
   return (
     <div className="mx-auto max-w-5xl pb-20">
-      {/* Back Button */}
       <button onClick={() => navigate(-1)} className="mb-6 flex items-center gap-2 text-slate-500 hover:text-electric-violet dark:text-gray-400 dark:hover:text-electric-violet transition-colors">
         <ArrowLeft size={20} />
         <span className="font-semibold">Back to Feed</span>
@@ -61,7 +69,6 @@ export const ProductDetail = () => {
               className="h-full w-full object-cover" 
             />
           </div>
-          {/* Thumbnails */}
           {product.images.length > 1 && (
             <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
               {product.images.map((img, idx) => (
@@ -132,17 +139,27 @@ export const ProductDetail = () => {
             </div>
           </div>
 
-          <button 
-            onClick={handleContact}
-            className="mt-8 flex w-full items-center justify-center gap-2 rounded-2xl bg-electric-violet py-4 text-lg font-bold text-white transition-all duration-300 hover:bg-[#6D28D9] hover:shadow-[0_0_20px_rgba(124,58,237,0.4)]"
-          >
-            <MessageSquare size={20} />
-            {isAuthenticated ? 'Contact Seller' : 'Login to Message Seller'}
-          </button>
+          {/* 3. CONDITIONALLY RENDER THE BUTTON */}
+          {isOwner ? (
+            <div className="mt-8 flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-100 py-4 text-lg font-bold text-slate-500 dark:bg-white/5 dark:text-gray-400">
+              <ShieldCheck size={20} />
+              This is your item
+            </div>
+          ) : (
+            <button 
+              onClick={handleContact}
+              className="mt-8 flex w-full items-center justify-center gap-2 rounded-2xl bg-electric-violet py-4 text-lg font-bold text-white transition-all duration-300 hover:bg-[#6D28D9] hover:shadow-[0_0_20px_rgba(124,58,237,0.4)]"
+            >
+              <MessageSquare size={20} />
+              {isAuthenticated ? 'Contact Seller' : 'Login to Message Seller'}
+            </button>
+          )}
+
         </div>
       </div>
       
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
+      <ContactModal isOpen={isContactModalOpen} onClose={() => setIsContactModalOpen(false)} product={product} />
     </div>
   );
 };

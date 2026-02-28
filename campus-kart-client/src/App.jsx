@@ -12,10 +12,10 @@ import { useStore } from './store/useStore';
 import { Explore } from './pages/Explore';
 import { PostItem } from './pages/PostItem';
 import { ProductDetail } from './pages/ProductDetail';
+import { Chat } from './pages/Chat';
+import { Dashboard } from './pages/Dashboard';
 
 const AccessDenied = () => <div className="p-8 text-red-500 font-bold">Access Denied: Banned</div>;
-const Dashboard = () => <div className="p-8 text-white">User Dashboard (PROTECTED)</div>;
-const Chat = () => <div className="p-8 text-white">Safe-Chat Interface (PROTECTED)</div>;
 const Found = () => <div className="p-8 text-white">The Found Feed (PROTECTED)</div>;
 
 function App() {
