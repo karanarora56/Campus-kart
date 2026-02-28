@@ -235,3 +235,21 @@ export const resetPassword = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+/**
+ * @desc    Logout user & clear cookie
+ * @route   POST /api/auth/logout
+ * @access  Public
+ */
+export const logout = (req, res) => {
+  // MUST match the exact name of the cookie set in sendToken ('token')
+  res.clearCookie('token', { 
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict'
+  });
+
+  res.status(200).json({ 
+    success: true, 
+    message: "Successfully logged out" 
+  });
+};

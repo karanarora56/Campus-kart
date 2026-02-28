@@ -13,15 +13,11 @@ const productSchema = new mongoose.Schema({
     default: 0 
   },
   
-  // --- NITJ CATEGORIES (Merged Marketplace + Lost/Found) ---
+  // --- UPDATED CATEGORIES TO MATCH FRONTEND ---
   category: { 
     type: String, 
     required: true,
-    enum: [
-      'Scientific Calculators', 'Drafters', 'Lab Coats/Aprons', 'Study Tables', 
-      'Laptops/Peripherals', 'Mobile Phones', 'Books & PYQs', 'Hostel Appliances',
-      'Electronics', 'Documents/Cards', 'Keys', 'Engineering Gear', 'Personal Items'
-    ]
+    enum: ['Academics', 'Electronics', 'Stationery', 'Cycles', 'Lab Coats', 'Daily Use', 'Hardware', 'Others']
   },
 
   // --- ADMIN & REPORTING ---
@@ -40,23 +36,19 @@ const productSchema = new mongoose.Schema({
   // --- IMAGES ---
   images: [{ type: String, required: true }], 
 
-  // --- NITJ LOCATIONS (Added Department Building) ---
+  // --- REMOVED ENUM: Now students can type any spot (e.g., "Mega Hostel") ---
   preferredMeetupSpot: { 
     type: String, 
-    enum: [
-      'BH-1', 'BH-2', 'BH-5', 'BH-6', 'BH-7', 'Mega Boys Block A', 'Mega Boys Block B', 'Mega Boys Block F', 
-      'GH-1', 'GH-2', 'Mega Girls Hostel', 'Nescafe', 'Night Canteen', 'Snackers', 'Yadav Canteen', 
-      'Campus Cafe', 'Rim Jhim Bakery', 'Central Library', 'Department Building'
-    ],
-    default: 'Snackers' 
+    required: true 
   },
 
-  // --- SUSTAINABILITY & KARMA ---
+  // --- UPDATED CONDITIONS TO MATCH FRONTEND ---
   condition: { 
     type: String, 
-    enum: ['New', 'Gently Used', 'Heavily Used'], 
-    default: 'Gently Used' 
+    enum: ['New', 'Like New', 'Used', 'Refurbished', 'Heavily Used'], 
+    default: 'Used' 
   },
+  
   karmaPointsAwarded: { type: Boolean, default: false }, // For rewarding finders
 
   // --- POST TYPE LOGIC ---

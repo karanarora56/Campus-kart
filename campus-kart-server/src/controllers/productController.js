@@ -1,5 +1,18 @@
 import Product from '../models/Product.js';
 import User from '../models/User.js';
+import cloudinary from '../utils/cloudinary.js';
+const uploadToCloudinary = (buffer) => {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      { folder: 'campus-kart-products' }, // Organizes images in your Cloudinary dashboard
+      (error, result) => {
+        if (error) reject(error);
+        else resolve(result.secure_url);
+      }
+    );
+    stream.end(buffer);
+  });
+};
 
 /**
  * @desc    Create a new product listing or Lost/Found post
@@ -10,20 +23,36 @@ export const createProduct = async (req, res) => {
   try {
     const { 
       title, description, category, price, isFree, 
-      images, preferredMeetupSpot, condition,
-      postType, isRecovered 
+      preferredMeetupSpot, condition, postType, isRecovered 
     } = req.body;
 
+    // 1. Handle Multiple Image Uploads to Cloudinary
+    let imageUrls = [];
+    if (req.files && req.files.length > 0) {
+      // Upload all images concurrently for speed
+      const uploadPromises = req.files.map(file => uploadToCloudinary(file.buffer));
+      imageUrls = await Promise.all(uploadPromises);
+    }
+
+    // 2. Parse boolean values (FormData sends everything as strings)
+    const isItemFree = isFree === 'true';
+
+    // 3. Create the Database Record
     const product = await Product.create({
       seller: req.user._id,
-      title, description, category,
-      price: isFree ? 0 : price,
-      isFree, images, preferredMeetupSpot, condition,
+      title, 
+      description, 
+      category,
+      price: isItemFree ? 0 : Number(price),
+      isFree: isItemFree, 
+      images: imageUrls, // Save the secure Cloudinary URLs
+      preferredMeetupSpot, 
+      condition,
       postType: postType || 'Listing',
-      isRecovered: isRecovered || false
+      isRecovered: isRecovered === 'true'
     });
 
-    res.status(201).json({ success: true, message: "Item posted!", product });
+    res.status(201).json({ success: true, message: "Item posted successfully!", product });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -47,7 +76,6 @@ export const getFoundFeed = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
-
 /**
  * @desc    Fetch all available marketplace listings (Excludes Lost/Found)
  * @route   GET /api/products
@@ -55,21 +83,36 @@ export const getFoundFeed = async (req, res) => {
  */
 export const getProducts = async (req, res) => {
   try {
-    const products = await Product.find({ 
+    const { category, search } = req.query;
+    
+    // Base query: Only show available marketplace listings
+    let query = { 
       postType: 'Listing',
       isHidden: false, 
       isAdminRemoved: false,
       status: 'Available' 
-    })
-    .populate('seller', 'fullName sustainabilityScore impactLevel') 
-    .sort({ createdAt: -1 });
+    };
+
+    // If a specific category is requested (and it's not 'All'), add it to the query
+    if (category && category !== 'All') {
+      query.category = category;
+    }
+
+    // Optional: If they use a search bar later
+    if (search) {
+      query.title = { $regex: search, $options: 'i' };
+    }
+
+    const products = await Product.find(query)
+      .populate('seller', 'fullName sustainabilityScore impactLevel') 
+      .sort({ createdAt: -1 });
 
     res.status(200).json({ success: true, count: products.length, products });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
-
+// Additional endpoints for product details, marking as sold, and reporting are implemented below.
 /**
  * @desc    Get detailed view of a single product
  * @route   GET /api/products/:id
