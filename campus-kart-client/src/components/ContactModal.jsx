@@ -1,30 +1,58 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Send, Loader2, CheckCircle2, MessageSquare } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../utils/axiosInstance';
 
-const QUICK_MESSAGES = [
-  "Is this item still available?",
-  "I'm interested! Can we discuss the price?",
-  "Can I get more details about the condition?",
-  "I'd like to offer something in exchange for this.",
-  "Check out my profile for potential swap items!"
-];
-
 export const ContactModal = ({ isOpen, onClose, product }) => {
   const navigate = useNavigate();
-  const [selectedMsg, setSelectedMsg] = useState(QUICK_MESSAGES[0]);
+  const [selectedMsg, setSelectedMsg] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [error, setError] = useState(''); // 1. ADD ERROR STATE
+  const [error, setError] = useState('');
+
+  // --- DYNAMIC MESSAGES BASED ON POST TYPE ---
+  const getMessageOptions = () => {
+    if (product?.postType === 'Lost') {
+      return [
+        "I think I found your item!",
+        "Can you provide more details about where you lost it?",
+        "I saw something similar at the library yesterday."
+      ];
+    }
+    if (product?.postType === 'Found') {
+      return [
+        "This is mine! I can prove it.",
+        "Where exactly did you find this?",
+        "When are you available to meet so I can pick it up?"
+      ];
+    }
+    return [
+      "Is this item still available?",
+      "I'm interested! Can we discuss the price?",
+      "Can I get more details about the condition?"
+    ];
+  };
+
+  const options = getMessageOptions();
+
+  // Set default selection when modal opens
+  // Set default selection when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      const defaultMsg = product?.postType === 'Lost' ? "I think I found your item!" 
+                       : product?.postType === 'Found' ? "This is mine! I can prove it." 
+                       : "Is this item still available?";
+      setSelectedMsg(defaultMsg);
+    }
+  }, [isOpen, product]);
 
   if (!product) return null;
 
   const handleSend = async () => {
     try {
       setLoading(true);
-      setError(''); // Reset error on new attempt
+      setError('');
       
       const { data: chat } = await axiosInstance.post('/chat', {
         productId: product._id || product.id,
@@ -42,7 +70,6 @@ export const ContactModal = ({ isOpen, onClose, product }) => {
       }, 1500);
 
     } catch (err) {
-      // 2. CATCH AND DISPLAY THE BACKEND ERROR
       console.error("Failed to start chat", err);
       setError(err.response?.data?.message || 'Failed to start chat. Please try again.');
     } finally {
@@ -55,9 +82,7 @@ export const ContactModal = ({ isOpen, onClose, product }) => {
       {isOpen && (
         <>
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={onClose}
             className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm dark:bg-black/60"
           />
@@ -69,14 +94,15 @@ export const ContactModal = ({ isOpen, onClose, product }) => {
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               className="w-full max-w-lg overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl pointer-events-auto dark:border-white/10 dark:bg-[#0B0E14]"
             >
-              
               <div className="flex items-center justify-between border-b border-slate-100 p-6 dark:border-white/5">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-electric-violet/10 text-electric-violet">
                     <MessageSquare size={20} />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold text-slate-900 dark:text-white">Contact Seller</h3>
+                    <h3 className="text-xl font-bold text-slate-900 dark:text-white">
+                      {product.postType === 'Listing' ? 'Contact Seller' : 'Contact Student'}
+                    </h3>
                     <p className="text-xs text-slate-500 dark:text-gray-400">Send a quick request to start the conversation</p>
                   </div>
                 </div>
@@ -98,8 +124,6 @@ export const ContactModal = ({ isOpen, onClose, product }) => {
                 </div>
               ) : (
                 <div className="p-6">
-                  
-                  {/* 3. DISPLAY ERROR IF IT EXISTS */}
                   {error && (
                     <div className="mb-4 rounded-xl border border-red-500/50 bg-red-500/10 p-3 text-sm text-red-500 dark:text-red-400">
                       {error}
@@ -114,18 +138,19 @@ export const ContactModal = ({ isOpen, onClose, product }) => {
                     />
                     <div>
                       <h4 className="font-bold text-slate-900 dark:text-white line-clamp-1">{product.title}</h4>
-                      <p className="font-black text-electric-violet">
-                        {product.isFree || product.price === 0 ? 'FREE' : `₹${product.price}`}
+                      <p className={`font-black uppercase tracking-wider ${product.postType === 'Lost' ? 'text-rose-500' : 'text-electric-violet'}`}>
+                        {product.postType === 'Listing' ? (product.isFree || product.price === 0 ? 'FREE' : `₹${product.price}`) : `${product.postType} ITEM`}
                       </p>
                       <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">
-                        Seller: {product.seller?.fullName || 'Campus Student'}
+                        {product.postType === 'Listing' ? 'Seller: ' : 'Reported by: '}
+                        {product.seller?.fullName || 'Campus Student'}
                       </p>
                     </div>
                   </div>
 
                   <p className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-gray-400">Select a Message</p>
                   <div className="flex flex-col gap-2 mb-6">
-                    {QUICK_MESSAGES.map((msg, idx) => (
+                    {options.map((msg, idx) => (
                       <button
                         key={idx}
                         onClick={() => setSelectedMsg(msg)}
@@ -154,7 +179,6 @@ export const ContactModal = ({ isOpen, onClose, product }) => {
                   </button>
                 </div>
               )}
-
             </motion.div>
           </div>
         </>

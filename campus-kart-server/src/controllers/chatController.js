@@ -37,12 +37,13 @@ export const accessChat = async (req, res) => {
 // getMyChats remains the same as yours - it's good!
 
 // 2. Get all chats for the logged-in user (Inbox)
+// 2. Get all chats for the logged-in user (Inbox)
 export const getMyChats = async (req, res) => {
   try {
-    // Using req.user._id ensures we match the database participant IDs exactly
     const chats = await Chat.find({ participants: req.user._id }) 
       .populate('participants', 'fullName email')
-      .populate('product', 'title price images')
+      // FIX: Add postType and isFree to the populate list!
+      .populate('product', 'title price images postType isFree') 
       .sort({ updatedAt: -1 });
 
     res.status(200).json(chats);

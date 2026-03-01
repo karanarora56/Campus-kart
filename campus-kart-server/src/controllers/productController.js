@@ -169,13 +169,13 @@ export const markProductAsSold = async (req, res) => {
       return res.status(403).json({ success: false, message: "You can only mark your own items as sold!" });
     }
 
-    // 3. Check Status THIRD
+   // 3. Check Status THIRD
     if (product.status === 'Sold') {
       return res.status(400).json({ success: false, message: "This item is already marked as sold" });
     }
 
-    product.status = 'Sold';
-    await product.save();
+    // FIX: Bypass full validation so old "Gently Used" items don't crash the server
+    await Product.findByIdAndUpdate(req.params.id, { status: 'Sold' });
 
     // --- SUSTAINABILITY CALCULATOR ---
     let pointsEarned = 10; // Base points for reusing

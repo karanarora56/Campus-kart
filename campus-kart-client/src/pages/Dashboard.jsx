@@ -133,10 +133,12 @@ export const Dashboard = () => {
                   </div>
                 )}
               </div>
-              <div className="flex flex-1 flex-col p-5">
+             <div className="flex flex-1 flex-col p-5">
                 <h3 className="line-clamp-1 font-bold text-slate-900 dark:text-white">{item.title}</h3>
-                <p className="mt-1 font-black text-electric-violet">
-                  {item.price === 0 ? 'FREE' : `₹${item.price}`}
+                
+                {/* DYNAMIC TEXT FOR DASHBOARD */}
+                <p className={`mt-1 font-black uppercase tracking-wider ${item.postType === 'Lost' ? 'text-rose-500' : item.postType === 'Found' ? 'text-emerald-500' : 'text-electric-violet'}`}>
+                  {item.postType === 'Listing' ? (item.price === 0 ? 'FREE' : `₹${item.price}`) : `${item.postType} ITEM`}
                 </p>
                 
                 <div className="mt-auto pt-4 flex gap-2">
@@ -146,7 +148,10 @@ export const Dashboard = () => {
                     className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-500/10 py-2.5 text-sm font-bold text-emerald-600 transition-colors hover:bg-emerald-500 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed dark:text-emerald-400"
                   >
                     <CheckCircle2 size={16} />
-                    {item.status === 'Sold' ? 'Sold Out' : 'Mark Sold'}
+                    {/* DYNAMIC BUTTON TEXT */}
+                    {item.status === 'Sold' 
+                      ? (item.postType === 'Listing' ? 'Sold Out' : 'Resolved') 
+                      : (item.postType === 'Listing' ? 'Mark Sold' : 'Resolve')}
                   </button>
                   <button 
                     onClick={() => deleteItem(item._id)}

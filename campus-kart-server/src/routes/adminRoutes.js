@@ -7,7 +7,8 @@ import {
   getUserModerationHistory, 
   getReportedProducts, 
   removeProductByAdmin,
-  promoteToAdmin
+  promoteToAdmin,
+  clearReports
 } from '../controllers/adminController.js';
 import { protect, isAdmin } from '../middleware/authMiddleware.js';
 
@@ -21,4 +22,5 @@ router.get('/history/:id', getUserModerationHistory);
 router.get('/reports', getReportedProducts); // To view the list of reported items [cite: 2026-02-15]
 router.delete('/product/:id', removeProductByAdmin); // To take action on a specific item [cite: 2026-02-15]
 router.patch('/promote/:id', promoteToAdmin); // To promote a student to Admin role [cite: 2026-02-15]
+router.patch('/product/:id/clear-reports', clearReports); // To clear reports if the item is deemed safe [cite: 2026-02-15]
 export default router;

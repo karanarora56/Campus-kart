@@ -170,13 +170,17 @@ export const Chat = () => {
                 alt="product" 
                 className="h-10 w-10 rounded-lg object-cover opacity-80"
               />
-              <div className="flex-1">
+             <div className="flex-1">
                 {/* SAFE GUARD ADDED HERE */}
                 <h3 className="font-bold text-slate-900 dark:text-white">
                   {activeChat.product?.title || 'Deleted Listing'}
                 </h3>
-                <p className="text-xs text-electric-violet font-semibold">
-                  {activeChat.product?.price === 0 ? 'FREE' : (activeChat.product?.price ? `₹${activeChat.product.price}` : 'Unavailable')}
+                
+                {/* ADD THIS P TAG BACK IN */}
+                <p className={`text-xs font-bold tracking-wider uppercase ${activeChat.product?.postType === 'Lost' ? 'text-rose-500' : 'text-electric-violet'}`}>
+                  {activeChat.product?.postType === 'Listing' 
+                    ? (activeChat.product?.isFree || activeChat.product?.price === 0 ? 'FREE' : (activeChat.product?.price ? `₹${activeChat.product.price}` : ''))
+                    : activeChat.product?.postType ? `${activeChat.product.postType} ITEM` : ''}
                 </p>
               </div>
               <div className="hidden items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 sm:flex">

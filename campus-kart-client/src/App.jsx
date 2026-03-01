@@ -14,9 +14,10 @@ import { PostItem } from './pages/PostItem';
 import { ProductDetail } from './pages/ProductDetail';
 import { Chat } from './pages/Chat';
 import { Dashboard } from './pages/Dashboard';
+import { Found } from './pages/Found';
+import { AdminDashboard } from './pages/AdminDashboard';
 
 const AccessDenied = () => <div className="p-8 text-red-500 font-bold">Access Denied: Banned</div>;
-const Found = () => <div className="p-8 text-white">The Found Feed (PROTECTED)</div>;
 
 function App() {
   // 1. CALL ALL HOOKS AT THE VERY TOP
@@ -76,6 +77,7 @@ function App() {
             <Route path="/chat" element={<Chat />} />
             <Route path="/found" element={<Found />} />
             <Route path="/post" element={<PostItem />} />
+            <Route path="/admin" element={<AdminDashboard />} />
           </Route>
 
         </Route>

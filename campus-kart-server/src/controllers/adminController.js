@@ -173,3 +173,23 @@ export const promoteToAdmin = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+/**
+ * @desc    Clear reports for an item (Mark as Safe)
+ * @route   PATCH /api/admin/product/:id/clear-reports
+ * @access  Private/Admin
+ */
+export const clearReports = async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product) {
+      return res.status(404).json({ success: false, message: "Product not found" });
+    }
+
+    product.reports = []; // Empty the reports array to mark it safe
+    await product.save();
+
+    res.status(200).json({ success: true, message: "Reports cleared. Item marked as safe." });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};

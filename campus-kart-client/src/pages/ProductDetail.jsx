@@ -75,7 +75,7 @@ export const ProductDetail = () => {
                 <button 
                   key={idx} 
                   onClick={() => setActiveImage(idx)}
-                  className={`h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl border-2 transition-all ${activeImage === idx ? 'border-electric-violet' : 'border-transparent opacity-60 hover:opacity-100'}`}
+                  className={`h-20 w-20 shrink-0 overflow-hidden rounded-xl border-2 transition-all ${activeImage === idx ? 'border-electric-violet' : 'border-transparent opacity-60 hover:opacity-100'}`}
                 >
                   <img src={img} alt="thumbnail" className="h-full w-full object-cover" />
                 </button>
@@ -94,14 +94,22 @@ export const ProductDetail = () => {
           <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white md:text-4xl">
             {product.title}
           </h1>
-          
+         {/* DYNAMIC PRICE / STATUS DISPLAY */}
           <div className="mt-4 flex items-end gap-4">
-            <span className="text-4xl font-black text-electric-violet">
-              {product.isFree ? 'FREE' : `₹${product.price}`}
-            </span>
-            <span className="mb-1 rounded-md bg-amber-500/10 px-2 py-1 text-xs font-bold text-amber-600 dark:text-amber-400 uppercase">
-              {product.condition}
-            </span>
+            {product.postType === 'Listing' ? (
+              <>
+                <span className="text-4xl font-black text-electric-violet">
+                  {product.isFree ? 'FREE' : `₹${product.price}`}
+                </span>
+                <span className="mb-1 rounded-md bg-amber-500/10 px-2 py-1 text-xs font-bold text-amber-600 dark:text-amber-400 uppercase">
+                  {product.condition}
+                </span>
+              </>
+            ) : (
+              <span className={`text-4xl font-black tracking-wider uppercase ${product.postType === 'Lost' ? 'text-rose-500' : 'text-emerald-500'}`}>
+                {product.postType} ITEM
+              </span>
+            )}
           </div>
 
           <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-white/5 dark:bg-[#12161f]">
@@ -128,7 +136,9 @@ export const ProductDetail = () => {
                   <ShieldCheck size={20} />
                 </div>
                 <div>
-                  <p className="text-xs font-semibold text-slate-500 dark:text-gray-400">Seller</p>
+                 <p className="text-xs font-semibold text-slate-500 dark:text-gray-400">
+  {product.postType === 'Listing' ? 'Seller' : 'Reported By'}
+</p>
                   <p className="font-bold text-slate-900 dark:text-white">{product.seller?.fullName || 'Campus Student'}</p>
                 </div>
               </div>
