@@ -19,7 +19,7 @@ const sendToken = (user, statusCode, res) => {
 
   res.status(statusCode).cookie('token', token, cookieOptions).json({
     success: true,
-    token, // Sending token in response too for easier frontend handling
+    token, 
     user: {
       id: user._id,
       fullName: user.fullName,
@@ -29,7 +29,8 @@ const sendToken = (user, statusCode, res) => {
       batch: user.batch,
       sustainabilityScore: user.sustainabilityScore,
       impactLevel: user.impactLevel,
-      isEmailVerified: user.isEmailVerified
+      isEmailVerified: user.isEmailVerified,
+      savedItems: user.savedItems // <--- 1. ADD THIS LINE HERE
     }
   });
 };
@@ -146,7 +147,8 @@ export const getProfile = async (req, res) => {
         impactLevel: user.impactLevel,
         isEmailVerified: user.isEmailVerified,
         role: user.role,
-        isBanned: user.isBanned // Added to align with our Ban-check logic
+        isBanned: user.isBanned, 
+        savedItems: user.savedItems // <--- 2. ADD THIS LINE HERE TOO
       }
     });
   } catch (error) {

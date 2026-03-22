@@ -36,11 +36,12 @@ const userSchema = new mongoose.Schema({
   isAccountActive: { type: Boolean, default: true }, 
   
   // Stores the full history of Admin actions for this user
+// Inside your User Schema
   moderationHistory: [{
-    action: { type: String, enum: ['BAN', 'UNBAN','PROMOTION'] },
-    reason: { type: String, required: true },
-    timestamp: { type: Date, default: Date.now },
-    performedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' } // Reference to Admin
+    action: { type: String },
+    reason: { type: String },
+    performedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    createdAt: { type: Date, default: Date.now } // <--- ADD THIS STRICT SCHEMA DEFINITION
   }],
 
   // --- TRUST & REWARDS ---
@@ -51,6 +52,8 @@ impactLevel: {
   enum: ['Seedling', 'Sprout', 'Tree', 'Forest Guardian'],
   default: 'Seedling'
 },
+// --- PHASE 12: WISHLIST ---
+  savedItems: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }]
 
 }, { timestamps: true });
 

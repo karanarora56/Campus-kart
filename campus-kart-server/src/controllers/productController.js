@@ -69,7 +69,8 @@ export const getFoundFeed = async (req, res) => {
     const foundItems = await Product.find({ 
       postType: { $in: ['Lost', 'Found'] },
       isRecovered: false,
-      isHidden: false 
+      isHidden: false,
+      status: { $ne: 'Sold' } // <--- ADD THIS LINE: Exclude resolved items
     }).populate('seller', 'fullName branch');
 
     res.status(200).json({ success: true, products: foundItems });
@@ -168,14 +169,20 @@ export const markProductAsSold = async (req, res) => {
     if (product.seller.toString() !== req.user._id.toString()) {
       return res.status(403).json({ success: false, message: "You can only mark your own items as sold!" });
     }
-
-   // 3. Check Status THIRD
+// 3. Check Status THIRD
     if (product.status === 'Sold') {
-      return res.status(400).json({ success: false, message: "This item is already marked as sold" });
+      return res.status(400).json({ success: false, message: "This item is already marked as sold/resolved" });
     }
 
-    // FIX: Bypass full validation so old "Gently Used" items don't crash the server
-    await Product.findByIdAndUpdate(req.params.id, { status: 'Sold' });
+    // FIX: Update status AND isRecovered simultaneously
+    const updateData = { status: 'Sold' };
+    if (product.postType === 'Lost' || product.postType === 'Found') {
+      updateData.isRecovered = true;
+    }
+
+    await Product.findByIdAndUpdate(req.params.id, updateData);
+
+    // --- SUSTAINABILITY CALCULATOR ---
 
     // --- SUSTAINABILITY CALCULATOR ---
     let pointsEarned = 10; // Base points for reusing
@@ -277,6 +284,60 @@ export const deleteProduct = async (req, res) => {
     await product.deleteOne();
     
     res.status(200).json({ success: true, message: "Item permanently deleted." });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+/**
+ * @desc    Toggle saving a product to the user's wishlist
+ * @route   POST /api/products/:id/save
+ * @access  Private
+ */
+/**
+ * @desc    Toggle saving a product to the user's wishlist
+ * @route   POST /api/products/:id/save
+ * @access  Private
+ */
+export const toggleSaveProduct = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    const productId = req.params.id;
+
+    // FIX: Convert MongoDB ObjectIds to standard strings before comparing!
+    const isSaved = user.savedItems.some(id => id.toString() === productId);
+    
+    if (isSaved) {
+      // FIX: Filter out the ID by strictly comparing strings
+      user.savedItems = user.savedItems.filter(id => id.toString() !== productId);
+    } else {
+      user.savedItems.push(productId);
+    }
+    
+    await user.save();
+    res.status(200).json({ success: true, savedItems: user.savedItems });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * @desc    Get user's saved wishlist items
+ * @route   GET /api/products/saved/me
+ * @access  Private
+ */
+export const getSavedProducts = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).populate({
+      path: 'savedItems',
+      // Only return items that haven't been deleted or banned
+      match: { isHidden: false, isAdminRemoved: false }, 
+      populate: { path: 'seller', select: 'fullName branch' }
+    });
+
+    // Filter out any nulls in case an item was permanently deleted from DB
+    const validSavedItems = user.savedItems.filter(item => item !== null);
+
+    res.status(200).json({ success: true, products: validSavedItems });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

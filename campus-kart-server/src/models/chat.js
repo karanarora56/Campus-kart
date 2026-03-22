@@ -30,10 +30,8 @@ const chatSchema = new mongoose.Schema({
     enum: ['Chatting', 'Meetup Arranged', 'Completed', 'Cancelled'], 
     default: 'Chatting' 
   }
+  
 }, { timestamps: true });
-
-// Crucial: This index works with the sorting logic in our controller
-chatSchema.index({ product: 1, participants: 1 }, { unique: true });
 
 const Chat = mongoose.model('Chat', chatSchema);
 export default Chat;

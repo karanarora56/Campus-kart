@@ -9,7 +9,9 @@ import {
   getProductById, 
   markProductAsSold, 
   reportProduct,
-  deleteProduct
+  deleteProduct,
+  toggleSaveProduct, // Add this
+  getSavedProducts
 } from '../controllers/productController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { upload } from '../middleware/uploadMiddleware.js';
@@ -20,6 +22,7 @@ router.get('/found-feed', getFoundFeed);
 
 // Protected Route for Dashboard (MUST be above /:id to avoid "me" being read as an ID)
 router.get('/me', protect, getMyProducts);
+router.get('/saved/me', protect, getSavedProducts);
 
 // Route for specific product
 router.get('/:id', getProductById);
@@ -29,5 +32,6 @@ router.post('/', protect, upload.array('images', 5), createProduct);
 router.patch('/:id/sold', protect, markProductAsSold);
 router.post('/:id/report', protect, reportProduct);
 router.delete('/:id', protect, deleteProduct);
+router.post('/:id/save', protect, toggleSaveProduct);
 
 export default router;
