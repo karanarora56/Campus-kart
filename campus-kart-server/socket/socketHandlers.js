@@ -1,4 +1,4 @@
-import Chat from '../src/models/chat.js';
+import Chat from '../src/models/Chat.js';
 
 const setupSocketHandlers = (io) => {
   io.on('connection', (socket) => {
