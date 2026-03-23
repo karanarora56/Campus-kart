@@ -13,8 +13,8 @@ const sendToken = (user, statusCode, res) => {
   const cookieOptions = {
     expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 Days
     httpOnly: true, 
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict', // Protects against CSRF attacks
+    secure: true,        // <--- CHANGED TO TRUE
+    sameSite: 'none',    // <--- CHANGED TO 'none'
   };
 
   res.status(statusCode).cookie('token', token, cookieOptions).json({
@@ -243,11 +243,10 @@ export const resetPassword = async (req, res) => {
  * @access  Public
  */
 export const logout = (req, res) => {
-  // MUST match the exact name of the cookie set in sendToken ('token')
   res.clearCookie('token', { 
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict'
+    secure: true,      // <--- CHANGED TO TRUE
+    sameSite: 'none'   // <--- CHANGED TO 'none'
   });
 
   res.status(200).json({ 
