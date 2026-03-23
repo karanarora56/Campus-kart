@@ -1,4 +1,4 @@
-import Chat from '../models/Chat.js';
+import Chat from '../models/chat.js';
 import Product from '../models/Product.js'; // Added
 import User from '../models/User.js';       // Added
 export const accessChat = async (req, res) => {
