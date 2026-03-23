@@ -1,5 +1,6 @@
 import User from '../models/User.js';
 import Product from '../models/Product.js';
+import { clearProductCache } from '../config/redis.js';
 
 export const banUser = async (req, res) => {
   try {
@@ -19,11 +20,14 @@ export const banUser = async (req, res) => {
       action: 'BAN',
       reason: reason || "Violation of campus guidelines",
       performedBy: adminId,
-      createdAt: new Date() // <--- ADD THIS LINE
+      createdAt: new Date()
     });
 
     await user.save();
     await Product.updateMany({ seller: userId }, { isHidden: true });
+    
+    // WIPE CACHE: So their items instantly vanish from the Explore feed
+    await clearProductCache();
 
     res.status(200).json({ success: true, message: `User ${user.fullName} banned.` });
   } catch (error) {
@@ -44,11 +48,14 @@ export const unbanUser = async (req, res) => {
       action: 'UNBAN',
       reason: reason || "Account restored after review",
       performedBy: adminId,
-      createdAt: new Date() // <--- ADD THIS LINE
+      createdAt: new Date()
     });
 
     await user.save();
     await Product.updateMany({ seller: userId }, { isHidden: false });
+    
+    // WIPE CACHE: So their restored items reappear on the Explore feed
+    await clearProductCache();
 
     res.status(200).json({ success: true, message: `User ${user.fullName} restored.` });
   } catch (error) {
@@ -83,7 +90,6 @@ export const getReportedProducts = async (req, res) => {
 
 export const removeProductByAdmin = async (req, res) => {
   try {
-    // FIX: Use findByIdAndUpdate to bypass validation of old schema fields
     const product = await Product.findByIdAndUpdate(
       req.params.id, 
       { isAdminRemoved: true, isHidden: true },
@@ -91,6 +97,10 @@ export const removeProductByAdmin = async (req, res) => {
     );
     
     if (!product) return res.status(404).json({ success: false, message: "Product not found" });
+    
+    // WIPE CACHE: So the removed item instantly vanishes from the Explore feed
+    await clearProductCache();
+
     res.status(200).json({ success: true, message: "Item removed by Admin." });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -104,11 +114,11 @@ export const promoteToAdmin = async (req, res) => {
     if (user.role === 'admin') return res.status(400).json({ success: false, message: "User is already an Admin" });
 
     user.role = 'admin';
-   user.moderationHistory.push({
+    user.moderationHistory.push({
       action: 'PROMOTION',
       reason: "Promoted to Admin status by " + req.user.fullName,
       performedBy: req.user._id,
-      createdAt: new Date() // <--- ADD THIS LINE
+      createdAt: new Date()
     });
 
     await user.save();
@@ -120,7 +130,6 @@ export const promoteToAdmin = async (req, res) => {
 
 export const clearReports = async (req, res) => {
   try {
-    // FIX: Use findByIdAndUpdate to bypass validation
     const product = await Product.findByIdAndUpdate(
       req.params.id, 
       { reports: [] },
@@ -134,7 +143,6 @@ export const clearReports = async (req, res) => {
   }
 };
 
-// NEW: Fetch all users for the Admin panel
 export const getAllUsers = async (req, res) => {
   try {
     const users = await User.find({}).select('-password').sort({ createdAt: -1 });
