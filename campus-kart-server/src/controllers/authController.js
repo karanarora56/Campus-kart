@@ -39,28 +39,26 @@ export const register = async (req, res) => {
     const { fullName, email, password, branch, batch } = req.body;
 
     let user = await User.findOne({ email });
-    
+
     // 1. OVERWRITE GHOST ACCOUNTS
-    // If the user exists but never verified their OTP, don't block them!
-    // Overwrite their data with the new attempt and send a fresh OTP.
+    // If the user exists but never verified their OTP, do not block them!
+    // Overwrite their data with the new password/details and send a fresh OTP.
     if (user) {
       if (user.isEmailVerified) {
-        return res.status(400).json({ success: false, message: "User already exists with this verified email." });
+        return res.status(400).json({ success: false, message: "An account with this verified email already exists." });
       }
       
-      // Update the unverified user with fresh data
       const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-      user.fullName = fullName;
-      user.password = password; // The pre-save hook will re-hash this
-      user.branch = branch;
-      user.batch = batch;
+      user.fullName = fullName || user.fullName;
+      user.password = password; // The pre-save hook will re-hash this automatically
+      user.branch = branch || user.branch;
+      user.batch = batch || user.batch;
       user.otp = otpCode;
-      user.otpExpires = Date.now() + 10 * 60 * 1000;
+      user.otpExpires = Date.now() + 10 * 60 * 1000; // 10 mins
       
       await user.save();
 
-      // 2. FIRE AND FORGET EMAILS (NO AWAIT)
-      // We do not wait for Google to respond. We send it to the background.
+      // FIRE AND FORGET EMAILS (Notice there is no 'await')
       sendOTPEmail(email, otpCode).catch(err => console.error("Background OTP Error:", err));
 
       return res.status(200).json({ 
@@ -69,9 +67,8 @@ export const register = async (req, res) => {
       });
     }
 
-    // 3. BRAND NEW USER REGISTRATION
+    // 2. BRAND NEW REGISTRATION
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-    const otpExpiry = Date.now() + 10 * 60 * 1000; // 10 mins
 
     user = await User.create({
       fullName,
@@ -80,11 +77,11 @@ export const register = async (req, res) => {
       branch,
       batch,
       otp: otpCode,
-      otpExpires: otpExpiry,
+      otpExpires: Date.now() + 10 * 60 * 1000,
       isEmailVerified: false 
     });
 
-    // 4. FIRE AND FORGET EMAILS (NO AWAIT)
+    // FIRE AND FORGET EMAILS (Notice there is no 'await')
     sendOTPEmail(email, otpCode).catch(err => console.error("Background OTP Error:", err));
     sendAdminAlert({ fullName, email, branch, batch }).catch(err => console.error("Background Admin Alert Error:", err));
 
@@ -95,35 +92,10 @@ export const register = async (req, res) => {
     });
     
   } catch (error) {
+    console.error("Registration Error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
-export const login = async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    if (!email || !password) {
-      return res.status(400).json({ success: false, message: "Please provide email and password" });
-    }
-
-    const user = await User.findOne({ email }).select('+password');
-    if (!user || !(await user.comparePassword(password))) {
-      return res.status(401).json({ success: false, message: "Invalid credentials" });
-    }
-
-    if (user.isBanned) {
-      return res.status(403).json({ success: false, message: "Account is banned. Contact Admin." });
-    }
-
-    if (!user.isEmailVerified) {
-      return res.status(401).json({ success: false, message: "Please verify your NITJ email before logging in." });
-    }
-
-    sendToken(user, 200, res);
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
 export const verifyOTP = async (req, res) => {
   try {
     const { email, otp } = req.body; 
