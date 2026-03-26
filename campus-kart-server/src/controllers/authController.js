@@ -96,6 +96,33 @@ export const register = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+export const login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ success: false, message: "Please provide email and password" });
+    }
+
+    const user = await User.findOne({ email }).select('+password');
+    if (!user || !(await user.comparePassword(password))) {
+      return res.status(401).json({ success: false, message: "Invalid credentials" });
+    }
+
+    if (user.isBanned) {
+      return res.status(403).json({ success: false, message: "Account is banned. Contact Admin." });
+    }
+
+    if (!user.isEmailVerified) {
+      return res.status(401).json({ success: false, message: "Please verify your NITJ email before logging in." });
+    }
+
+    sendToken(user, 200, res);
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 export const verifyOTP = async (req, res) => {
   try {
     const { email, otp } = req.body; 
