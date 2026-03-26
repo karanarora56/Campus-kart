@@ -22,6 +22,8 @@ import setupSocketHandlers from './socket/socketHandlers.js';
 import { redisClient } from './src/config/redis.js'; // <--- ADDED REDIS CONNECTION
 
 const app = express();
+app.set('trust proxy', 1);
+
 const httpServer = createServer(app);
 const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
 
