@@ -37,62 +37,44 @@ const sendToken = (user, statusCode, res) => {
 export const register = async (req, res) => {
   try {
     const { fullName, email, password, branch, batch } = req.body;
-
     let user = await User.findOne({ email });
 
     // 1. OVERWRITE GHOST ACCOUNTS
-    // If the user exists but never verified their OTP, do not block them!
-    // Overwrite their data with the new password/details and send a fresh OTP.
     if (user) {
-      if (user.isEmailVerified) {
-        return res.status(400).json({ success: false, message: "An account with this verified email already exists." });
-      }
+      if (user.isEmailVerified) return res.status(400).json({ success: false, message: "Account already exists." });
       
       const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
       user.fullName = fullName || user.fullName;
-      user.password = password; // The pre-save hook will re-hash this automatically
+      user.password = password; 
       user.branch = branch || user.branch;
       user.batch = batch || user.batch;
       user.otp = otpCode;
-      user.otpExpires = Date.now() + 10 * 60 * 1000; // 10 mins
-      
+      user.otpExpires = Date.now() + 10 * 60 * 1000; 
       await user.save();
 
-      // FIRE AND FORGET EMAILS (Notice there is no 'await')
-      sendOTPEmail(email, otpCode).catch(err => console.error("Background OTP Error:", err));
+      // 🚨 EMERGENCY BACKUP: Print OTP to Render console if emails fail
+      console.log(`🎟️ REGISTRATION OTP FOR ${email}:`, otpCode);
+      sendOTPEmail(email, otpCode).catch(err => console.error("Email Error:", err));
 
-      return res.status(200).json({ 
-        success: true, 
-        message: "Registration restarted. Please check your NITJ email for the new OTP." 
-      });
+      return res.status(200).json({ success: true, message: "Registration restarted." });
     }
 
     // 2. BRAND NEW REGISTRATION
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-
     user = await User.create({
-      fullName,
-      email,
-      password,
-      branch,
-      batch,
+      fullName, email, password, branch, batch,
       otp: otpCode,
       otpExpires: Date.now() + 10 * 60 * 1000,
       isEmailVerified: false 
     });
 
-    // FIRE AND FORGET EMAILS (Notice there is no 'await')
-    sendOTPEmail(email, otpCode).catch(err => console.error("Background OTP Error:", err));
-    sendAdminAlert({ fullName, email, branch, batch }).catch(err => console.error("Background Admin Alert Error:", err));
+    // 🚨 EMERGENCY BACKUP: Print OTP to Render console if emails fail
+    console.log(`🎟️ REGISTRATION OTP FOR ${email}:`, otpCode);
+    sendOTPEmail(email, otpCode).catch(err => console.error("Email Error:", err));
+    sendAdminAlert({ fullName, email, branch, batch }).catch(err => console.error("Admin Alert Error:", err));
 
-    // Instantly respond to the frontend so the loader stops spinning!
-    res.status(201).json({ 
-      success: true, 
-      message: "Registration successful. Please check your NITJ email for the OTP." 
-    });
-    
+    res.status(201).json({ success: true, message: "Registration successful." });
   } catch (error) {
-    console.error("Registration Error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -100,29 +82,39 @@ export const register = async (req, res) => {
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (!email || !password) {
-      return res.status(400).json({ success: false, message: "Please provide email and password" });
-    }
+    if (!email || !password) return res.status(400).json({ success: false, message: "Please provide email and password" });
 
     const user = await User.findOne({ email }).select('+password');
     if (!user || !(await user.comparePassword(password))) {
       return res.status(401).json({ success: false, message: "Invalid credentials" });
     }
 
-    if (user.isBanned) {
-      return res.status(403).json({ success: false, message: "Account is banned. Contact Admin." });
-    }
+    if (user.isBanned) return res.status(403).json({ success: false, message: "Account is banned. Contact Admin." });
 
+    // --- THE FIX: GHOST LOGIN RESCUE ---
     if (!user.isEmailVerified) {
-      return res.status(401).json({ success: false, message: "Please verify your NITJ email before logging in." });
+      // 1. Generate a fresh OTP because they probably lost the old one
+      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+      user.otp = otpCode;
+      user.otpExpires = Date.now() + 10 * 60 * 1000;
+      await user.save();
+
+      // 2. Try to send email, but also print to console as a backup
+      console.log(`🎟️ LOGIN RESCUE OTP FOR ${email}:`, otpCode);
+      sendOTPEmail(user.email, otpCode).catch(err => console.error("Email Error:", err));
+
+      // 3. LOG THEM IN ANYWAY! 
+      // Because 'isEmailVerified' is false, your React ProtectedRoute will 
+      // instantly catch them and force them to the VerifyOTP screen!
+      return sendToken(user, 200, res);
     }
 
+    // Normal Login for verified users
     sendToken(user, 200, res);
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
-
 export const verifyOTP = async (req, res) => {
   try {
     const { email, otp } = req.body; 
