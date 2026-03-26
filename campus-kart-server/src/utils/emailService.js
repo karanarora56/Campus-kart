@@ -4,15 +4,15 @@ import nodemailer from 'nodemailer';
 const getTransporter = () => {
   return nodemailer.createTransport({
     host: 'smtp.gmail.com',
-    port: 587,
-    secure: false,
+    port: 465,          // <--- CHANGE 1: Switch to Google's secure port 465
+    secure: true,       // <--- CHANGE 2: Set secure to true
+    family: 4,          // <--- THE MAGIC FIX: Force IPv4 to bypass the Render network error
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
     },
   });
 };
-
 // 1. Send OTP to Student
 export const sendOTPEmail = async (email, otp) => {
   const transporter = getTransporter(); // Initialize right before sending
