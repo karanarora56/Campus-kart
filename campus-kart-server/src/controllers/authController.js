@@ -34,16 +34,42 @@ const sendToken = (user, statusCode, res) => {
     }
   });
 };
-
 export const register = async (req, res) => {
   try {
     const { fullName, email, password, branch, batch } = req.body;
 
     let user = await User.findOne({ email });
+    
+    // 1. OVERWRITE GHOST ACCOUNTS
+    // If the user exists but never verified their OTP, don't block them!
+    // Overwrite their data with the new attempt and send a fresh OTP.
     if (user) {
-      return res.status(400).json({ success: false, message: "User already exists" });
+      if (user.isEmailVerified) {
+        return res.status(400).json({ success: false, message: "User already exists with this verified email." });
+      }
+      
+      // Update the unverified user with fresh data
+      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+      user.fullName = fullName;
+      user.password = password; // The pre-save hook will re-hash this
+      user.branch = branch;
+      user.batch = batch;
+      user.otp = otpCode;
+      user.otpExpires = Date.now() + 10 * 60 * 1000;
+      
+      await user.save();
+
+      // 2. FIRE AND FORGET EMAILS (NO AWAIT)
+      // We do not wait for Google to respond. We send it to the background.
+      sendOTPEmail(email, otpCode).catch(err => console.error("Background OTP Error:", err));
+
+      return res.status(200).json({ 
+        success: true, 
+        message: "Registration restarted. Please check your NITJ email for the new OTP." 
+      });
     }
 
+    // 3. BRAND NEW USER REGISTRATION
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
     const otpExpiry = Date.now() + 10 * 60 * 1000; // 10 mins
 
@@ -58,23 +84,20 @@ export const register = async (req, res) => {
       isEmailVerified: false 
     });
 
-    // Alert the student and the admin
-   try {
-  await sendOTPEmail(email, otpCode);
-  await sendAdminAlert({ fullName, email, branch, batch });
-} catch (mailError) {
-  console.error("Email sending error:", mailError);
-}
+    // 4. FIRE AND FORGET EMAILS (NO AWAIT)
+    sendOTPEmail(email, otpCode).catch(err => console.error("Background OTP Error:", err));
+    sendAdminAlert({ fullName, email, branch, batch }).catch(err => console.error("Background Admin Alert Error:", err));
 
+    // Instantly respond to the frontend so the loader stops spinning!
     res.status(201).json({ 
       success: true, 
       message: "Registration successful. Please check your NITJ email for the OTP." 
     });
+    
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
-
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
