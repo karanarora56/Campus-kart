@@ -1,12 +1,14 @@
 // We are using the Brevo HTTP API via native 'fetch' to completely bypass Render's SMTP firewall!
-
 const sendViaBrevo = async (toEmail, subject, htmlContent) => {
   try {
+    // FALLBACK: If Render fails to load the ENV, use the string directly
+    const API_KEY = process.env.BREVO_API_KEY;
+
     const response = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
       headers: {
         'accept': 'application/json',
-        'api-key': process.env.BREVO_API_KEY,
+        'api-key': API_KEY,
         'content-type': 'application/json'
       },
       body: JSON.stringify({
@@ -16,7 +18,6 @@ const sendViaBrevo = async (toEmail, subject, htmlContent) => {
         htmlContent: htmlContent
       })
     });
-
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || 'Failed to send email');
     return data;
