@@ -1,32 +1,43 @@
 // We are using the Brevo HTTP API via native 'fetch' to completely bypass Render's SMTP firewall!
 const sendViaBrevo = async (toEmail, subject, htmlContent) => {
   try {
-    // FALLBACK: If Render fails to load the ENV, use the string directly
     const API_KEY = process.env.BREVO_API_KEY;
+
+    if (!API_KEY) {
+      throw new Error("BREVO_API_KEY is missing from environment variables");
+    }
 
     const response = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
       headers: {
-        'accept': 'application/json',
+        accept: 'application/json',
         'api-key': API_KEY,
-        'content-type': 'application/json'
+        'content-type': 'application/json',
       },
       body: JSON.stringify({
-        sender: { name: 'Campus Kart Verification', email: process.env.EMAIL_USER },
+        sender: {
+          name: 'Campus Kart Verification',
+          email: process.env.EMAIL_USER,
+        },
         to: [{ email: toEmail }],
-        subject: subject,
-        htmlContent: htmlContent
-      })
+        subject,
+        htmlContent,
+      }),
     });
+
     const data = await response.json();
-    if (!response.ok) throw new Error(data.message || 'Failed to send email');
+
+    if (!response.ok) {
+      console.error("Brevo full response:", data);
+      throw new Error(data.message || 'Failed to send email');
+    }
+
     return data;
   } catch (error) {
     console.error("Brevo API Error:", error.message);
     throw error;
   }
 };
-
 // 1. Send OTP to Student
 export const sendOTPEmail = async (email, otp) => {
   const subject = `🔐 ${otp} is your verification code`;
