@@ -78,38 +78,37 @@ export const register = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
-
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (!email || !password) return res.status(400).json({ success: false, message: "Please provide email and password" });
+    if (!email || !password) {
+      return res.status(400).json({ success: false, message: "Please provide email and password" });
+    }
 
     const user = await User.findOne({ email }).select('+password');
     if (!user || !(await user.comparePassword(password))) {
       return res.status(401).json({ success: false, message: "Invalid credentials" });
     }
 
-    if (user.isBanned) return res.status(403).json({ success: false, message: "Account is banned. Contact Admin." });
+    if (user.isBanned) {
+      return res.status(403).json({ success: false, message: "Account is banned. Contact Admin." });
+    }
 
-    // --- THE FIX: GHOST LOGIN RESCUE ---
+    // --- GHOST LOGIN RESCUE ---
     if (!user.isEmailVerified) {
-      // 1. Generate a fresh OTP because they probably lost the old one
+      // 1. Generate a fresh OTP
       const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
       user.otp = otpCode;
       user.otpExpires = Date.now() + 10 * 60 * 1000;
       await user.save();
 
-      // 2. Try to send email, but also print to console as a backup
-      console.log(`🎟️ LOGIN RESCUE OTP FOR ${email}:`, otpCode);
-      sendOTPEmail(user.email, otpCode).catch(err => console.error("Email Error:", err));
+      // 2. Send the new OTP via Brevo in the background
+      sendOTPEmail(user.email, otpCode).catch(err => console.error("Rescue Email Error:", err));
 
-      // 3. LOG THEM IN ANYWAY! 
-      // Because 'isEmailVerified' is false, your React ProtectedRoute will 
-      // instantly catch them and force them to the VerifyOTP screen!
+      // 3. Log them in anyway! ProtectedRoute will force them to the VerifyOTP screen.
       return sendToken(user, 200, res);
     }
 
-    // Normal Login for verified users
     sendToken(user, 200, res);
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -169,7 +168,6 @@ export const getProfile = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
-
 export const resendOTP = async (req, res) => {
   try {
     const { email } = req.body;
@@ -178,14 +176,14 @@ export const resendOTP = async (req, res) => {
     if (!user) return res.status(404).json({ success: false, message: "User not found" });
     if (user.isEmailVerified) return res.status(400).json({ success: false, message: "Email already verified" });
 
-    // Generate new OTP [cite: 2026-02-16]
+    // Generate new OTP
     const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
     user.otp = newOtp;
     user.otpExpires = Date.now() + 10 * 60 * 1000; // 10 more minutes
     await user.save();
 
-    // Send via your dual-email strategy [cite: 2026-02-16]
-    // await sendOTPEmail(user.email, newOtp); 
+    // FIX: Actually send the email via Brevo (Removed the slashes!)
+    sendOTPEmail(user.email, newOtp).catch(err => console.error("Resend Email Error:", err)); 
 
     res.status(200).json({ success: true, message: "New OTP sent to your NITJ email." });
   } catch (error) {
